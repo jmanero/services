@@ -18,7 +18,9 @@ Environment=PODMAN_SYSTEMD_UNIT=%n
 Environment=SERVICE_NAME=%N
 Environment=CONTAINER_IMAGE_REPO=docker.io/mempool/frontend
 Environment=CONTAINER_IMAGE_TAG=v3.0.0
-Environment=CONTAINER_NETWORK=mempool
+Environment=CONTAINER_NETWORK=podman
+
+Environment=
 EnvironmentFile=-/usr/local/services/mempool.env
 
 ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}

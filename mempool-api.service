@@ -18,7 +18,16 @@ Environment=PODMAN_SYSTEMD_UNIT=%n
 Environment=SERVICE_NAME=%N
 Environment=CONTAINER_IMAGE_REPO=docker.io/mempool/backend
 Environment=CONTAINER_IMAGE_TAG=v3.0.0
-Environment=CONTAINER_NETWORK=mempool
+Environment=CONTAINER_NETWORK=podman
+
+Environment=CORE_RPC_PORT=8332
+Environment=CORE_RPC_USERNAME=bitcoin
+Environment=CORE_RPC_PASSWORD=bitcoin
+
+Environment=MEMPOOL_BACKEND=electrum
+Environment=ELECTRUM_PORT=50002
+Environment=ELECTRUM_TLS_ENABLED=true
+
 EnvironmentFile=-/usr/local/services/mempool.env
 EnvironmentFile=-/usr/local/services/%N.env
 
@@ -27,7 +36,7 @@ ExecStartPre=/usr/bin/mkdir -p /var/data/%N
 
 ExecStart=/usr/bin/podman run -d --name ${SERVICE_NAME} --pull newer\
   --cgroups no-conmon --sdnotify conmon --log-driver journald --stop-timeout 120 --env-host\
-  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:8080:8080/tcp\
+  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:8999:8999/tcp\
   --read-only --volume /var/data/%N:/data:z --tmpfs /tmp --env WORK_DIR=/data\
   ${CONTAINER_IMAGE_REPO}:${CONTAINER_IMAGE_TAG}
 
