@@ -1,0 +1,37 @@
+[Unit]
+Description=Alby Hub Lightning Node
+Documentation=https://github.com/getalby/hub
+
+Wants=network-online.target local-fs.target
+After=network-online.target local-fs.target
+
+RequiresMountsFor=%t/containers /var/data/%N
+
+[Service]
+Type=notify
+NotifyAccess=all
+
+Restart=on-failure
+TimeoutStopSec=180
+
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=SERVICE_NAME=%N
+Environment=CONTAINER_IMAGE_REPO=ghcr.io/getalby/hub
+Environment=CONTAINER_IMAGE_TAG=v1.7.2
+Environment=CONTAINER_NETWORK=podman
+EnvironmentFile=-/usr/local/service/%N.env
+
+ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+ExecStartPre=/usr/bin/mkdir -p /var/data/%N
+
+ExecStart=/usr/bin/podman run -d --name ${SERVICE_NAME} --pull newer\
+  --cgroups no-conmon --sdnotify conmon --log-driver journald --stop-timeout 120 --env-host\
+  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:8080:8080/tcp\
+  --read-only --volume /var/data/%N:/data:z --tmpfs /tmp --env WORK_DIR=/data\
+  ${CONTAINER_IMAGE_REPO}:${CONTAINER_IMAGE_TAG}
+
+ExecStop=/usr/bin/podman stop --ignore ${SERVICE_NAME}
+ExecStopPost=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+
+[Install]
+WantedBy=default.target

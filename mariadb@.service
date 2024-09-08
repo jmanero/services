@@ -1,0 +1,46 @@
+[Unit]
+Description=MariaDB Server - %i
+Documentation=https://mariadb.org/documentation/
+
+Wants=network-online.target local-fs.target
+After=network-online.target local-fs.target
+
+RequiresMountsFor=%t/containers /var/data/%p/%i
+
+[Service]
+Type=notify
+NotifyAccess=all
+
+Restart=on-failure
+TimeoutStopSec=360
+
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=SERVICE_NAME=%p-%i
+Environment=CONTAINER_IMAGE_REPO=docker.io/library/mariadb
+Environment=CONTAINER_IMAGE_TAG=10.6-ubi9
+Environment=CONTAINER_NETWORK=podman
+Environment=MYSQL_DATABASE=database
+Environment=MYSQL_USER=mysql
+Environment=MYSQL_PASSWORD=mysql
+Environment=MYSQL_ROOT_PASSWORD=admin
+EnvironmentFile=-/usr/local/service/%p.env
+EnvironmentFile=-/usr/local/service/%i.env
+EnvironmentFile=-/usr/local/service/%N.env
+
+ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+ExecStartPre=/usr/bin/mkdir -p /var/data/%p/%i
+ExecStartPre=/usr/bin/chown 999:999 /var/data/%p/%i
+
+ExecStart=/usr/bin/podman run -d --name ${SERVICE_NAME} --pull newer\
+  --cgroups no-conmon --sdnotify healthy --log-driver journald --stop-timeout 300 --env-host\
+  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:3306:3306/tcp\
+  --read-only --volume /var/data/%p/%i:/var/lib/mysql:z --tmpfs /tmp\
+  --health-cmd "/usr/local/bin/healthcheck.sh --connect" --health-interval 1m --health-retries 2\
+  --health-startup-cmd "/usr/local/bin/healthcheck.sh --connect --innodb_initialized --innodb_buffer_pool_loaded" --health-startup-interval 10s\
+  ${CONTAINER_IMAGE_REPO}:${CONTAINER_IMAGE_TAG}
+
+ExecStop=/usr/bin/podman stop --ignore ${SERVICE_NAME}
+ExecStopPost=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+
+[Install]
+WantedBy=default.target

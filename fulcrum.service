@@ -1,0 +1,40 @@
+[Unit]
+Description=Electrum service replacement
+Documentation=https://github.com/cculianu/Fulcrum
+
+Wants=network-online.target local-fs.target
+After=network-online.target local-fs.target
+
+RequiresMountsFor=%t/containers /var/data/%N
+
+[Service]
+Type=notify
+NotifyAccess=all
+
+Restart=on-failure
+TimeoutStopSec=180
+
+## Wait indefinitely for initialization or repair of a node
+TimeoutStartSec=infinity
+
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=SERVICE_NAME=%N
+Environment=CONTAINER_IMAGE_REPO=ghcr.io/jmanero/fulcrum
+Environment=CONTAINER_IMAGE_TAG=1.11
+Environment=CONTAINER_NETWORK=podman
+EnvironmentFile=-/usr/local/service/%N.env
+
+ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+ExecStartPre=/usr/bin/mkdir -p /var/data/%N
+
+ExecStart=/usr/bin/podman run -d --name ${SERVICE_NAME} --pull newer\
+  --cgroups no-conmon --sdnotify conmon --log-driver journald --stop-timeout 120 --env-host\
+  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:50001:50001/tcp\
+  --read-only --volume /var/data/%N:/data:z --tmpfs /tmp\
+  ${CONTAINER_IMAGE_REPO}:${CONTAINER_IMAGE_TAG}
+
+ExecStop=/usr/bin/podman stop --ignore ${SERVICE_NAME}
+ExecStopPost=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+
+[Install]
+WantedBy=default.target

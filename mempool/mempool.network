@@ -1,0 +1,10 @@
+[Unit]
+Description=podman network for mempool.space services
+
+[Network]
+NetworkName=mempool
+Internal=yes
+
+[Install]
+WantedBy=mariadb@mempool.service
+Before=mariadb@mempool.service

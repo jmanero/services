@@ -1,0 +1,42 @@
+[Unit]
+Description=bitcoind in a container
+Documentation=https://github.com/jmanero/bitcoin-image
+
+Wants=network-online.target local-fs.target
+After=network-online.target local-fs.target
+
+RequiresMountsFor=%t/containers /var/data/%N
+
+[Service]
+Type=notify
+NotifyAccess=all
+
+Restart=on-failure
+TimeoutStopSec=180
+
+## Wait indefinitely for initialization or repair of a node
+TimeoutStartSec=infinity
+
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=SERVICE_NAME=%N
+Environment=CONTAINER_IMAGE_REPO=ghcr.io/jmanero/bitcoind
+Environment=CONTAINER_IMAGE_TAG=27
+Environment=CONTAINER_NETWORK=podman
+EnvironmentFile=-/usr/local/service/%N.env
+
+ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+ExecStartPre=/usr/bin/mkdir -p /var/data/%N
+
+ExecStart=/usr/bin/podman run -d --name ${SERVICE_NAME} --pull newer\
+  --cgroups no-conmon --sdnotify healthy --log-driver journald --stop-timeout 120 --env-host\
+  --network ${CONTAINER_NETWORK} --publish 127.0.0.1:8332:8332/tcp --publish 8333:8333/tcp\
+  --read-only --volume /var/data/%N:/data:z --tmpfs /tmp\
+  --health-cmd "/usr/bin/monitor check" --health-interval 30m --health-retries 2\
+  --health-startup-cmd "/usr/bin/monitor startup" --health-startup-interval 10s\
+  ${CONTAINER_IMAGE_REPO}:${CONTAINER_IMAGE_TAG}
+
+ExecStop=/usr/bin/podman stop --ignore ${SERVICE_NAME}
+ExecStopPost=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
+
+[Install]
+WantedBy=default.target
