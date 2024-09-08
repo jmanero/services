@@ -22,7 +22,7 @@ Environment=SERVICE_NAME=%N
 Environment=CONTAINER_IMAGE_REPO=ghcr.io/jmanero/fulcrum
 Environment=CONTAINER_IMAGE_TAG=1.11
 Environment=CONTAINER_NETWORK=podman
-EnvironmentFile=-/usr/local/service/%N.env
+EnvironmentFile=-/usr/local/services/%N.env
 
 ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
 ExecStartPre=/usr/bin/mkdir -p /var/data/%N

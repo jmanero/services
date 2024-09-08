@@ -19,7 +19,7 @@ Environment=SERVICE_NAME=%N
 Environment=CONTAINER_IMAGE_REPO=docker.io/mempool/frontend
 Environment=CONTAINER_IMAGE_TAG=v3.0.0
 Environment=CONTAINER_NETWORK=mempool
-EnvironmentFile=-/usr/local/service/mempool.env
+EnvironmentFile=-/usr/local/services/mempool.env
 
 ExecStartPre=/usr/bin/podman rm --force --ignore ${SERVICE_NAME}
 ExecStartPre=/usr/bin/mkdir -p /var/data/%N
